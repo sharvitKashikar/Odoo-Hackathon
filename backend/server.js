@@ -1,67 +1,38 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { PrismaClient } = require("@prisma/client");
-const Joi = require("joi");
 
 const app = express();
 const prisma = new PrismaClient();
 
-// Middleware
+// Middleware (should come before routes)
 app.use(helmet());
-app.use(cors()); // Allow all origins currently
+app.use(cors());
 app.use(express.json());
 
-// Rate Limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
-// Routes
-app.get("/api/question", async (req, res) => {
-  const questions = await prisma.question.findMany({
-    include: { tags: true, user: true },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(questions);
-});
+// ✅ Route Imports
+const questionRoutes = require("./routes/question");
+const voteRoutes = require("./routes/question/vote");
+const tagRoutes = require("./routes/tags");
+const userRoutes = require("./routes/user");
 
-app.put("/api/question", async (req, res) => {
-  const schema = Joi.object({
-    title: Joi.string().required(),
-    description: Joi.string().required(),
-    tags: Joi.array().items(Joi.string()).min(1).required(),
-    userId: Joi.string().required(),
-  });
+// ✅ Register Routes
+app.use("/api/question", questionRoutes);
+app.use("/api/question", voteRoutes); // for /:id/upvote etc
+app.use("/api/tags", tagRoutes);
+app.use("/api/user", userRoutes);     // 🧠 this was missing!
 
-  const { error, value } = schema.validate(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
-
-  const { title, description, tags, userId } = value;
-
-  const question = await prisma.question.create({
-    data: {
-      title,
-      description,
-      userId,
-      tags: {
-        connectOrCreate: tags.map((tag) => ({
-          where: { name: tag },
-          create: { name: tag },
-        })),
-      },
-    },
-  });
-
-  res.status(201).json(question);
-});
-
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });

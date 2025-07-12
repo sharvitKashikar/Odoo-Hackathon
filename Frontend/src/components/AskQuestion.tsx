@@ -3,33 +3,50 @@ import { X, HelpCircle, Lightbulb, AlertCircle } from 'lucide-react';
 import { User } from '../types';
 
 interface AskQuestionProps {
-  onSubmit: (question: {
-    title: string;
-    body: string;
-    tags: string[];
-    author: string;
-  }) => void;
   onCancel: () => void;
   currentUser: User | null;
 }
 
-export function AskQuestion({ onSubmit, onCancel, currentUser }: AskQuestionProps) {
+export function AskQuestion({ onCancel, currentUser }: AskQuestionProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    
-    onSubmit({
-      title,
-      body,
-      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      author: currentUser.name
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!currentUser) return;
+
+  const payload = {
+    title,
+    body,
+    tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+    author: currentUser.id,
   };
+
+  try {
+    const res = await fetch('https://your-backend.com/api/questions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to post the question');
+    }
+
+    const result = await res.json();
+    console.log('✅ Question posted:', result);
+
+    // optional: redirect or reset form
+    // router.push(`/questions/${result.id}`) or just call onCancel()
+  } catch (error) {
+    console.error('🚨 Error:', error);
+  }
+};
+
 
   if (!currentUser) {
     return (
