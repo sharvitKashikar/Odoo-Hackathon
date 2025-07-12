@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { HomePage } from './components/HomePage';
@@ -9,57 +11,66 @@ import { TagsPage } from './components/TagsPage';
 import { UsersPage } from './components/UsersPage';
 import { UserProfile } from './components/UserProfile';
 import { LoginModal } from './components/LoginModal';
-import { questionsData } from './data/questionsData';
-import { usersData } from './data/usersData';
-import { tagsData } from './data/tagsData';
+import { questionsAPI, usersAPI, tagsAPI } from './services/api';
 import { Question, User, Tag, Answer } from './types';
 
 type ViewType = 'home' | 'questions' | 'question' | 'ask' | 'tags' | 'users' | 'profile';
 
 interface UserVote {
-  questionId: number;
+  questionId: string;
   voteType: 'up' | 'down';
 }
 
-function App() {
+function AppContent() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [currentView, setCurrentView] = useState<ViewType>('home');
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [questions, setQuestions] = useState<Question[]>(questionsData);
-  const [users, setUsers] = useState<User[]>(usersData);
-  const [tags] = useState<Tag[]>(tagsData);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sortBy, setSortBy] = useState<'newest' | 'active' | 'unanswered' | 'votes'>('newest');
   const [userVotes, setUserVotes] = useState<UserVote[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch initial data
   useEffect(() => {
-    // Auto-login for demo purposes
-    setCurrentUser(users[0]);
-    
-    // Listen for profile navigation event
-    const handleProfileNavigation = () => {
-      if (currentUser) {
-        setSelectedUser(currentUser);
-        setCurrentView('profile');
+    const fetchInitialData = async () => {
+      try {
+        const [questionsData, usersData, tagsData] = await Promise.all([
+          questionsAPI.getAll().catch(() => ({ questions: [] })),
+          usersAPI.getAll().catch(() => []),
+          tagsAPI.getAll().catch(() => [])
+        ]);
+        
+        setQuestions(questionsData.questions || questionsData || []);
+        setUsers(usersData || []);
+        setTags(tagsData || []);
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+        // Set empty arrays as fallback
+        setQuestions([]);
+        setUsers([]);
+        setTags([]);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    window.addEventListener('navigate-to-current-user-profile', handleProfileNavigation);
-    
-    return () => {
-      window.removeEventListener('navigate-to-current-user-profile', handleProfileNavigation);
-    };
-  }, [users]);
 
-  const handleQuestionClick = (question: Question) => {
-    // Increment view count
-    setQuestions(prev => prev.map(q => 
-      q.id === question.id ? { ...q, views: q.views + 1 } : q
-    ));
-    setSelectedQuestion(question);
-    setCurrentView('question');
+    fetchInitialData();
+  }, []);
+
+  const handleQuestionClick = async (question: Question) => {
+    try {
+      // Fetch full question details
+      const questionData = await questionsAPI.getBySlug(question.slug || question.id.toString());
+      setSelectedQuestion(questionData);
+      setCurrentView('question');
+    } catch (error) {
+      console.error('Error fetching question details:', error);
+    }
   };
 
   const handleUserClick = (user: User) => {
@@ -71,38 +82,44 @@ function App() {
     setCurrentView('questions');
   };
 
-  const handleAskQuestion = (newQuestion: Omit<Question, 'id' | 'createdAt' | 'votes' | 'answers' | 'views'>) => {
-    const question: Question = {
-      ...newQuestion,
-      id: questions.length + 1,
-      createdAt: new Date(),
-      votes: 0,
-      answers: 0,
-      views: 0
-    };
-    setQuestions([question, ...questions]);
-    setCurrentView('home');
-  };
-
-  const handleVoteQuestion = (questionId: number, voteType: 'up' | 'down') => {
-    if (!currentUser) {
+  const handleAskQuestion = async (newQuestion: Omit<Question, 'id' | 'createdAt' | 'votes' | 'answers' | 'views'>) => {
+    if (!isAuthenticated) {
       setShowLoginModal(true);
       return;
     }
 
-    // Check if user has already voted on this question
-    const existingVote = userVotes.find(vote => 
-      vote.questionId === questionId
-    );
-
-    // If user already voted the same way, remove the vote
-    if (existingVote && existingVote.voteType === voteType) {
-      setUserVotes(prev => prev.filter(vote => vote.questionId !== questionId));
+    try {
+      const createdQuestion = await questionsAPI.create({
+        title: newQuestion.title,
+        description: newQuestion.body || '',
+        tags: newQuestion.tags
+      });
       
+      setQuestions([createdQuestion, ...questions]);
+      setCurrentView('home');
+    } catch (error) {
+      console.error('Error creating question:', error);
+    }
+  };
+
+  const handleVoteQuestion = async (questionId: string, voteType: 'up' | 'down') => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      if (voteType === 'up') {
+        await questionsAPI.upvote(questionId);
+      } else {
+        await questionsAPI.downvote(questionId);
+      }
+
+      // Update local state
       setQuestions(prev => prev.map(q => {
         if (q.id === questionId) {
-          const newVotes = voteType === 'up' ? q.votes - 1 : q.votes + 1;
-          return { ...q, votes: newVotes };
+          const voteChange = voteType === 'up' ? 1 : -1;
+          return { ...q, votes: q.votes + voteChange };
         }
         return q;
       }));
@@ -110,91 +127,41 @@ function App() {
       if (selectedQuestion?.id === questionId) {
         setSelectedQuestion(prev => prev ? {
           ...prev,
-          votes: voteType === 'up' ? prev.votes - 1 : prev.votes + 1
+          votes: prev.votes + (voteType === 'up' ? 1 : -1)
         } : null);
       }
+    } catch (error) {
+      console.error('Error voting on question:', error);
+    }
+  };
+
+  const handleAddAnswer = async (questionId: string, answerText: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
       return;
     }
 
-    // If user voted differently, change the vote
-    if (existingVote && existingVote.voteType !== voteType) {
-      setUserVotes(prev => prev.map(vote => 
-        vote.questionId === questionId 
-          ? { ...vote, voteType }
-          : vote
+    try {
+      const newAnswer = await answersAPI.create({
+        content: answerText,
+        questionId
+      });
+
+      // Update questions with new answer count
+      setQuestions(prev => prev.map(q => 
+        q.id === questionId ? { ...q, answers: q.answers + 1 } : q
       ));
-      
-      setQuestions(prev => prev.map(q => {
-        if (q.id === questionId) {
-          // Change from opposite vote to current vote (2 point swing)
-          const newVotes = voteType === 'up' ? q.votes + 2 : q.votes - 2;
-          return { ...q, votes: newVotes };
-        }
-        return q;
-      }));
 
+      // Update selected question if it's the current one
       if (selectedQuestion?.id === questionId) {
         setSelectedQuestion(prev => prev ? {
           ...prev,
-          votes: voteType === 'up' ? prev.votes + 2 : prev.votes - 2
+          answers: prev.answers + 1,
+          answersList: [...(prev.answersList || []), newAnswer]
         } : null);
       }
-      return;
-    }
-
-    // New vote
-    setUserVotes(prev => [...prev, { questionId, voteType }]);
-    
-    setQuestions(prev => prev.map(q => {
-      if (q.id === questionId) {
-        const newVotes = voteType === 'up' ? q.votes + 1 : q.votes - 1;
-        return { ...q, votes: newVotes };
-      }
-      return q;
-    }));
-
-    if (selectedQuestion?.id === questionId) {
-      setSelectedQuestion(prev => prev ? {
-        ...prev,
-        votes: voteType === 'up' ? prev.votes + 1 : prev.votes - 1
-      } : null);
-    }
-  };
-
-  const getUserVote = (questionId: number): 'up' | 'down' | null => {
-    const vote = userVotes.find(vote => vote.questionId === questionId);
-    return vote ? vote.voteType : null;
-  };
-
-  const handleAddAnswer = (questionId: number, answerText: string) => {
-    if (!currentUser) {
-      setShowLoginModal(true);
-      return;
-    }
-
-    const newAnswer: Answer = {
-      id: Date.now(),
-      questionId,
-      body: answerText,
-      author: currentUser.name,
-      authorId: currentUser.id,
-      createdAt: new Date(),
-      votes: 0,
-      accepted: false
-    };
-
-    // Update questions with new answer count
-    setQuestions(prev => prev.map(q => 
-      q.id === questionId ? { ...q, answers: q.answers + 1 } : q
-    ));
-
-    // Update selected question if it's the current one
-    if (selectedQuestion?.id === questionId) {
-      setSelectedQuestion(prev => prev ? {
-        ...prev,
-        answers: prev.answers + 1,
-        answersList: [...(prev.answersList || []), newAnswer]
-      } : null);
+    } catch (error) {
+      console.error('Error adding answer:', error);
     }
   };
 
@@ -221,19 +188,26 @@ function App() {
     }
   });
 
-  const handleLogin = (email: string, password: string) => {
-    // Simple demo login - find user by email
-    const user = users.find(u => u.email === email);
-    if (user) {
-      setCurrentUser(user);
-      setShowLoginModal(false);
-    }
+  const handleLogout = () => {
+    logout();
+    setUserVotes([]);
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setUserVotes([]); // Clear votes when logging out
-  };
+  // Get top contributors (users sorted by reputation)
+  const topContributors = users
+    .sort((a, b) => (b.reputation || 0) - (a.reputation || 0))
+    .slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -241,7 +215,7 @@ function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onNavigate={setCurrentView}
-        currentUser={currentUser}
+        currentUser={user}
         onLogin={() => setShowLoginModal(true)}
         onLogout={handleLogout}
       />
@@ -249,16 +223,17 @@ function App() {
       <div className="max-w-7xl mx-auto flex">
         <Sidebar currentView={currentView} onNavigate={setCurrentView} />
         
-        <main className="flex-1 p-6 bg-white border-l border-r border-gray-200">
+        <main className="flex-1 p-6">
           {currentView === 'home' && (
             <HomePage 
+              questions={filteredQuestions.slice(0, 5)}
+              onQuestionClick={handleQuestionClick}
               onNavigateToQuestions={handleNavigateToQuestions}
               onAskQuestion={() => setCurrentView('ask')}
-              recentQuestions={questions.slice(0, 5)}
-              onQuestionClick={handleQuestionClick}
-              currentUser={currentUser}
+              currentUser={user}
               onUserClick={handleUserClick}
-              topContributors={users.slice().sort((a, b) => b.reputation - a.reputation)}
+              topContributors={topContributors}
+              recentQuestions={filteredQuestions.slice(0, 3)}
             />
           )}
           
@@ -268,10 +243,9 @@ function App() {
               onQuestionClick={handleQuestionClick}
               onAskQuestion={() => setCurrentView('ask')}
               onVote={handleVoteQuestion}
-              currentUser={currentUser}
+              currentUser={user}
               sortBy={sortBy}
               onSortChange={setSortBy}
-              getUserVote={getUserVote}
             />
           )}
           
@@ -281,9 +255,8 @@ function App() {
               onBack={() => setCurrentView('home')}
               onVote={handleVoteQuestion}
               onAddAnswer={handleAddAnswer}
-              currentUser={currentUser}
+              currentUser={user}
               onUserClick={handleUserClick}
-              userVote={getUserVote(selectedQuestion.id)}
             />
           )}
           
@@ -291,7 +264,7 @@ function App() {
             <AskQuestion 
               onSubmit={handleAskQuestion}
               onCancel={() => setCurrentView('home')}
-              currentUser={currentUser}
+              currentUser={user}
             />
           )}
 
@@ -300,7 +273,7 @@ function App() {
               tags={tags}
               onTagClick={(tag) => {
                 setSearchQuery(tag);
-                setCurrentView('home');
+                setCurrentView('questions');
               }}
             />
           )}
@@ -316,9 +289,9 @@ function App() {
             <UserProfile 
               user={selectedUser}
               questions={questions.filter(q => q.author === selectedUser.name)}
-              onBack={() => setCurrentView('questions')}
+              onBack={() => setCurrentView('home')}
               onQuestionClick={handleQuestionClick}
-              isCurrentUser={currentUser?.id === selectedUser.id}
+              isCurrentUser={user?.id === selectedUser.id}
             />
           )}
         </main>
@@ -327,11 +300,23 @@ function App() {
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onLogin={handleLogin}
-          users={users}
+          onLogin={(email, password) => {
+            // Handle login through context
+            setShowLoginModal(false);
+          }}
         />
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 

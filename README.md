@@ -1,83 +1,86 @@
 # Odoo Hackathon - StackIt Q&A Platform
 
-A modern, full-stack Q&A platform built for the Odoo Hackathon, featuring a Next.js backend with authentication and a React frontend with real-time interactions.
+A modern, full-stack Q&A platform built for the Odoo Hackathon, featuring a React frontend with TypeScript and an Express.js backend with PostgreSQL database.
 
 ## 🚀 Project Overview
 
 StackIt is a comprehensive Q&A platform inspired by Stack Overflow, designed to help developers ask questions, share knowledge, and build communities. The project consists of two main applications:
 
-- **Backend (StackIt)**: A Next.js 14 application with authentication, database management, and API endpoints
-- **Frontend**: A React + TypeScript application with modern UI components and real-time features
+- **Frontend (Frontend1)**: A React 18 + TypeScript application with modern UI components and real-time features
+- **Backend**: An Express.js application with authentication, database management, and RESTful API endpoints
 
 ## 🏗️ Architecture
 
-### Backend (StackIt)
-- **Framework**: Next.js 14 with App Router
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js with credentials provider
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **Real-time**: Pusher for notifications
-- **File Upload**: UploadThing for media handling
-- **Rich Text**: TipTap editor for content creation
-
-### Frontend
+### Frontend (Frontend1)
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
-- **State Management**: React hooks and local state
+- **State Management**: React hooks and context API
+- **HTTP Client**: Axios for API communication
+- **Routing**: React Router DOM
 - **Icons**: Lucide React
+
+### Backend
+- **Framework**: Express.js with Node.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT with bcrypt password hashing
+- **Validation**: Joi for request validation
+- **Security**: Helmet, CORS, Rate limiting
+- **File Structure**: MVC pattern with routes, controllers, and middleware
 
 ## ✨ Features
 
 ### Core Q&A Functionality
-- **Ask Questions**: Rich text editor with code formatting, images, and links
-- **Answer Questions**: Provide detailed answers with markdown support
+- **Ask Questions**: Create detailed questions with tags and rich text
+- **Answer Questions**: Provide comprehensive answers with markdown support
 - **Voting System**: Upvote/downvote questions and answers
 - **Comments**: Add comments to questions and answers
 - **Tags**: Categorize questions with relevant tags
 - **Search**: Full-text search across questions, tags, and content
 
 ### User Management
-- **Authentication**: Secure login/register with email or username
+- **Authentication**: Secure JWT-based login/register system
 - **User Profiles**: Detailed user profiles with reputation system
 - **Role-based Access**: Guest, User, and Admin roles
 - **Reputation System**: Earn reputation through helpful contributions
 
 ### Community Features
-- **User Mentions**: Mention other users in comments and answers
-- **Notifications**: Real-time notifications for interactions
 - **User Activity**: Track questions asked, answers given, and reputation
 - **Popular Tags**: Discover trending topics and categories
+- **Real-time Updates**: Live updates for votes and interactions
 
 ### Modern UI/UX
 - **Responsive Design**: Works seamlessly on desktop and mobile
-- **Dark/Light Mode**: Theme support (planned)
-- **Accessibility**: WCAG compliant components
 - **Loading States**: Smooth loading and error handling
+- **Accessibility**: WCAG compliant components
 
 ## 📁 Project Structure
 
 ```
 Odoo-Hackathon/
-├── backendfolder/
-│   └── stackit/                 # Next.js Backend Application
-│       ├── src/
-│       │   ├── app/            # App Router pages
-│       │   │   ├── (auth)/     # Authentication pages
-│       │   │   ├── (protected)/ # Protected routes
-│       │   │   └── api/        # API endpoints
-│       │   ├── components/     # Reusable UI components
-│       │   ├── lib/           # Utilities and configurations
-│       │   └── types/         # TypeScript type definitions
-│       ├── prisma/            # Database schema and migrations
-│       └── package.json
-├── Frontend/                   # React Frontend Application
+├── Frontend1/                   # React Frontend Application
 │   ├── src/
-│   │   ├── components/        # React components
-│   │   ├── data/             # Mock data for development
-│   │   ├── types/            # TypeScript interfaces
-│   │   └── App.tsx           # Main application component
+│   │   ├── components/         # React components
+│   │   ├── contexts/          # React contexts (AuthContext)
+│   │   ├── services/          # API services
+│   │   ├── types/             # TypeScript interfaces
+│   │   └── App.tsx            # Main application component
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/                    # Express.js Backend Application
+│   ├── routes/                # API route handlers
+│   │   ├── auth/              # Authentication routes
+│   │   ├── question/          # Question routes
+│   │   ├── answer/            # Answer routes
+│   │   ├── user/              # User routes
+│   │   └── tags/              # Tag routes
+│   ├── controllers/           # Business logic
+│   ├── middleware/            # Custom middleware
+│   ├── prisma/                # Database schema and migrations
+│   ├── server.js              # Main server file
 │   └── package.json
+├── setup.md                   # Detailed setup guide
+├── package.json               # Root package.json with scripts
 └── README.md
 ```
 
@@ -93,145 +96,135 @@ The application uses PostgreSQL with the following main entities:
 - **Notifications**: Real-time notifications for user interactions
 - **Mentions**: User mention system for engagement
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ 
 - PostgreSQL database
 - npm or yarn package manager
 
-### Backend Setup (StackIt)
+### 1. Install Dependencies
+```bash
+# Install all dependencies (root, backend, and frontend)
+npm run install-all
+```
 
-1. **Clone and navigate to backend**
-   ```bash
-   cd backendfolder/stackit
-   ```
+### 2. Database Setup
+```bash
+# Generate Prisma client
+npm run db:generate
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Run database migrations
+npm run db:migrate
 
-3. **Environment Setup**
-   Create a `.env.local` file with:
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/stackit"
-   NEXTAUTH_SECRET="your-secret-key"
-   NEXTAUTH_URL="http://localhost:3000"
-   PUSHER_APP_ID="your-pusher-app-id"
-   PUSHER_KEY="your-pusher-key"
-   PUSHER_SECRET="your-pusher-secret"
-   UPLOADTHING_SECRET="your-uploadthing-secret"
-   UPLOADTHING_APP_ID="your-uploadthing-app-id"
-   ```
+# (Optional) Open Prisma Studio for database management
+npm run db:studio
+```
 
-4. **Database Setup**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
+### 3. Environment Configuration
+```bash
+# Backend environment
+cd backend
+cp env.example .env
+# Edit .env with your database credentials and JWT secret
+```
 
-5. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+### 4. Start Development Servers
+```bash
+# Start both backend and frontend simultaneously
+npm run dev
+```
 
-   The backend will be available at `http://localhost:3000`
+- **Frontend**: `http://localhost:5173`
+- **Backend**: `http://localhost:3000`
 
-### Frontend Setup
+## 🔌 API Endpoints
 
-1. **Navigate to frontend**
-   ```bash
-   cd Frontend
-   ```
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### Questions
+- `GET /api/question` - Get all questions with filtering
+- `POST /api/question` - Create question
+- `GET /api/question/:slug` - Get question by slug
+- `PATCH /api/question/:id` - Update question
+- `DELETE /api/question/:id` - Delete question
+- `POST /api/question/:id/upvote` - Upvote question
+- `POST /api/question/:id/downvote` - Downvote question
 
-3. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+### Answers
+- `POST /api/answer` - Create answer
+- `PATCH /api/answer/:id` - Update answer
+- `DELETE /api/answer/:id` - Delete answer
+- `POST /api/answer/:id/accept` - Accept answer
+- `POST /api/answer/:id/upvote` - Upvote answer
+- `POST /api/answer/:id/downvote` - Downvote answer
 
-   The frontend will be available at `http://localhost:5173`
+### Users & Tags
+- `GET /api/user` - Get all users
+- `GET /api/user/:id` - Get user by ID
+- `GET /api/tags` - Get all tags
+- `GET /api/tags/popular` - Get popular tags
 
 ## 🛠️ Development
 
-### Backend Development
+### Available Scripts
 
-- **API Routes**: Located in `src/app/api/`
-- **Database Operations**: Use Prisma Client in `src/lib/prisma.ts`
-- **Authentication**: Configured in `src/lib/auth.ts`
-- **Components**: Reusable UI components in `src/components/`
-
-### Frontend Development
-
-- **State Management**: Uses React hooks and local state
-- **Routing**: Component-based routing with state management
-- **Data**: Mock data in `src/data/` for development
-- **Components**: Modular component architecture
-
-### Key Scripts
+**Root Level:**
+```bash
+npm run dev              # Start both frontend and backend
+npm run dev:backend      # Start only backend
+npm run dev:frontend     # Start only frontend
+npm run build            # Build both applications
+npm run db:generate      # Generate Prisma client
+npm run db:migrate       # Run database migrations
+npm run db:studio        # Open Prisma Studio
+```
 
 **Backend:**
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
+cd backend
+npm run dev              # Start with nodemon
+npm start                # Start production server
 ```
 
 **Frontend:**
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
+cd Frontend1
+npm run dev              # Start Vite dev server
+npm run build            # Build for production
+npm run preview          # Preview production build
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-**Backend (.env.local):**
-- `DATABASE_URL`: PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Secret for JWT tokens
-- `NEXTAUTH_URL`: Application URL
-- `PUSHER_*`: Pusher configuration for real-time features
-- `UPLOADTHING_*`: File upload service configuration
+**Backend (.env):**
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/stackit"
+JWT_SECRET="your-super-secret-jwt-key"
+PORT=3000
+FRONTEND_URL="http://localhost:5173"
+```
 
 ### Database Configuration
 
-The application uses Prisma with PostgreSQL. Key configurations:
-
-- **Migrations**: Located in `prisma/migrations/`
-- **Schema**: Defined in `prisma/schema.prisma`
-- **Client**: Generated in `node_modules/.prisma/client`
-
-## 🎨 UI Components
-
-The project uses a custom component library built with:
-- **shadcn/ui**: Base component library
-- **Radix UI**: Accessible primitives
-- **Tailwind CSS**: Utility-first styling
-- **Lucide React**: Icon library
-
-### Key Components
-- **Forms**: Login, registration, question asking
-- **Cards**: Question display, user profiles
-- **Navigation**: Header, sidebar, breadcrumbs
-- **Modals**: Login, confirmation dialogs
-- **Rich Text Editor**: TipTap-based content editor
+The application uses Prisma with PostgreSQL:
+- **Migrations**: Located in `backend/prisma/migrations/`
+- **Schema**: Defined in `backend/prisma/schema.prisma`
+- **Client**: Generated in `backend/node_modules/.prisma/client`
 
 ## 🔐 Authentication & Security
 
-- **NextAuth.js**: JWT-based authentication
-- **bcrypt**: Password hashing
+- **JWT Authentication**: Secure token-based authentication
+- **bcrypt**: Password hashing with salt rounds
 - **Role-based Access**: User roles and permissions
-- **Protected Routes**: Route groups for authenticated users
-- **Session Management**: Secure session handling
+- **Protected Routes**: Middleware for route protection
+- **Rate Limiting**: API rate limiting for security
+- **CORS**: Cross-origin resource sharing configuration
 
 ## 📱 Responsive Design
 
@@ -239,42 +232,70 @@ Both applications are fully responsive with:
 - **Mobile-first**: Optimized for mobile devices
 - **Breakpoints**: Tailwind CSS responsive utilities
 - **Touch-friendly**: Optimized for touch interactions
-- **Progressive Enhancement**: Works without JavaScript
 
 ## 🧪 Testing
 
 ### Backend Testing
-- Unit tests for utilities and helpers
+- Unit tests for controllers and utilities
 - API endpoint testing
 - Database integration tests
 
 ### Frontend Testing
 - Component testing with React Testing Library
 - User interaction testing
-- Responsive design testing
+- API integration testing
 
 ## 🚀 Deployment
 
 ### Backend Deployment
-1. Build the application: `npm run build`
-2. Set production environment variables
-3. Deploy to Vercel, Netlify, or your preferred platform
+1. Set production environment variables
+2. Build the application: `npm run build`
+3. Deploy to your preferred platform (Heroku, Railway, etc.)
 
 ### Frontend Deployment
 1. Build the application: `npm run build`
-2. Deploy the `dist` folder to your hosting platform
+2. Deploy the `dist` folder to your hosting platform (Vercel, Netlify, etc.)
 
 ### Database Deployment
-1. Set up PostgreSQL database
+1. Set up PostgreSQL database in production
 2. Run migrations: `npx prisma migrate deploy`
 3. Update environment variables
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Error**
+   - Check your `DATABASE_URL` in `.env`
+   - Ensure PostgreSQL is running
+   - Verify database exists
+
+2. **CORS Errors**
+   - Check `FRONTEND_URL` in backend `.env`
+   - Ensure frontend is running on the correct port
+
+3. **JWT Token Issues**
+   - Verify `JWT_SECRET` is set in backend `.env`
+   - Check token expiration
+
+4. **Port Conflicts**
+   - Backend: Change `PORT` in `.env` (default: 3000)
+   - Frontend: Change port in `vite.config.ts` (default: 5173)
+
+## 📚 Additional Resources
+
+- [Detailed Setup Guide](./setup.md) - Complete setup instructions
+- [Prisma Documentation](https://www.prisma.io/docs/)
+- [Express.js Documentation](https://expressjs.com/)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vitejs.dev/)
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📄 License
@@ -284,17 +305,10 @@ This project is part of the Odoo Hackathon and is licensed under the MIT License
 ## 🙏 Acknowledgments
 
 - **Odoo**: For hosting the hackathon
-- **Next.js Team**: For the amazing framework
+- **Express.js Team**: For the amazing framework
 - **Prisma**: For the excellent ORM
-- **shadcn/ui**: For the beautiful component library
+- **React Team**: For the powerful frontend framework
 - **Tailwind CSS**: For the utility-first CSS framework
-
-## 📞 Support
-
-For questions or support:
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation
 
 ---
 
