@@ -28,7 +28,7 @@ export function LoginModal({ onClose, onLogin, users }: LoginModalProps) {
       <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {isLogin ? 'Log in to Stack Overflow' : 'Join Stack Overflow'}
+            {isLogin ? 'Log in to StackIt' : 'Join StackIt'}
           </h2>
           <button
             onClick={onClose}

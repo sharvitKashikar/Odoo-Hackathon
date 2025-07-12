@@ -180,7 +180,7 @@ export function UsersPage({ users, onUserClick }: UsersPageProps) {
       <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-6">
         <h3 className="font-semibold text-green-900 mb-2">Join Our Community</h3>
         <p className="text-sm text-green-800 mb-3">
-          Stack Overflow is a community of millions of developers helping each other solve coding problems.
+          StackIt is a community of millions of developers helping each other solve coding problems.
         </p>
         <div className="text-sm text-green-800 space-y-1">
           <p>• Ask questions and get expert answers</p>

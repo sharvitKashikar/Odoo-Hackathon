@@ -219,7 +219,27 @@ export function UserProfile({ user, questions, onBack, onQuestionClick, isCurren
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Answers ({user.answersGiven || 0})</h3>
               <div className="text-center py-8 text-gray-500">
-                <p>Answer history would be displayed here.</p>
+                <div className="space-y-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer mb-2">
+                      How to implement authentication in React?
+                    </h4>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>15 votes</span>
+                      <span>Accepted</span>
+                      <span>2 days ago</span>
+                    </div>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer mb-2">
+                      Best practices for API error handling
+                    </h4>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>8 votes</span>
+                      <span>1 week ago</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
